@@ -11,3 +11,7 @@ plotly
 matplotlib
 reportlab
 pytest
+alembic
+pydantic
+requests
+pandas
