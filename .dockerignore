@@ -1,0 +1,64 @@
+# Git and version control
+.git
+.gitignore
+*.md
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Local development
+.env
+.env.local
+
+# Output files
+output/
+*.pdf
+# *.txt  # Don't exclude requirements.txt - be more specific instead
+output/*.txt
+
+# Docker
+.dockerignore
+Dockerfile.*

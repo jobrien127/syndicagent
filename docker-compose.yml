@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  syndicagent:
+    build: .
+    container_name: syndicagent-app
+    environment:
+      - AGWORLD_API_TOKEN=${AGWORLD_API_TOKEN:-}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./app.db
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    command: ["python", "demo.py"]
+
+  syndicagent-test:
+    build: .
+    container_name: syndicagent-test
+    environment:
+      - AGWORLD_API_TOKEN=${AGWORLD_API_TOKEN:-}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./test.db
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+    command: ["python", "test_local.py"]
+    profiles:
+      - test
+
+  syndicagent-pytest:
+    build: .
+    container_name: syndicagent-pytest
+    environment:
+      - AGWORLD_API_TOKEN=${AGWORLD_API_TOKEN:-}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./test.db
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+    command: ["pytest", "-v"]
+    profiles:
+      - test
+
+  redis:
+    image: redis:7-alpine
+    container_name: syndicagent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:
