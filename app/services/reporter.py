@@ -1,29 +1,55 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import os
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
 import tempfile
 from app.utils.logger import LoggerMixin
 from app.services.processor import processor
-from app.services.notifier import notifier
+
+# Import notifier with fallback
+try:
+    from app.services.notifier import notifier
+except ImportError:
+    notifier = None
+    print("Notifier not available, email sending will be disabled")
+
+# Try to import reportlab, fall back to simple text reports if not available
+try:
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    print("ReportLab not available, PDF generation will be disabled")
+    REPORTLAB_AVAILABLE = False
 
 class PDFReportGenerator(LoggerMixin):
     """Generates PDF reports using ReportLab"""
     
     def __init__(self):
         super().__init__()
-        self.styles = getSampleStyleSheet()
-        self.title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=self.styles['Heading1'],
-            fontSize=24,
-            textColor=colors.darkblue,
-            spaceAfter=30
-        )
+        if REPORTLAB_AVAILABLE:
+            self.styles = getSampleStyleSheet()
+            self.title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=self.styles['Heading1'],
+                fontSize=18,
+                spaceAfter=30,
+                textColor=colors.darkblue,
+                alignment=1  # Center alignment
+            )
+            self.header_style = ParagraphStyle(
+                'CustomHeader',
+                parent=self.styles['Heading2'],
+                fontSize=14,
+                spaceAfter=12,
+                textColor=colors.darkblue
+            )
+        else:
+            self.styles = None
+            self.title_style = None
+            self.header_style = None
     
     def generate_pdf_report(
         self,
@@ -31,16 +57,21 @@ class PDFReportGenerator(LoggerMixin):
         output_path: Optional[str] = None
     ) -> str:
         """Generate PDF report and return file path"""
+        if not REPORTLAB_AVAILABLE:
+            # Fallback to text report
+            return self.generate_text_report(report_data, output_path)
+            
         try:
-            # Create temporary file if no output path provided
+            # Create output file if no output path provided
             if not output_path:
-                temp_file = tempfile.NamedTemporaryFile(
-                    delete=False, 
-                    suffix='.pdf',
-                    prefix='agworld_report_'
-                )
-                output_path = temp_file.name
-                temp_file.close()
+                # Use /app/output directory (mounted to host) instead of /tmp
+                output_dir = "/app/output"
+                os.makedirs(output_dir, exist_ok=True)
+                
+                # Generate filename with timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"agworld_report_{timestamp}.pdf"
+                output_path = os.path.join(output_dir, filename)
             
             self.log_info(f"Generating PDF report: {output_path}")
             
@@ -70,7 +101,6 @@ class PDFReportGenerator(LoggerMixin):
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
                 ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
                 ('GRID', (0, 0), (-1, -1), 1, colors.black)
             ]))
             
@@ -78,21 +108,12 @@ class PDFReportGenerator(LoggerMixin):
             story.append(Spacer(1, 20))
             
             # Add content
-            if report_data.get('content'):
-                content_title = Paragraph('Report Content', self.styles['Heading2'])
-                story.append(content_title)
-                story.append(Spacer(1, 10))
-                
-                content = Paragraph(
-                    report_data['content'],
-                    self.styles['Normal']
-                )
-                story.append(content)
-                story.append(Spacer(1, 20))
+            content_header = Paragraph("Report Content", self.header_style)
+            story.append(content_header)
             
-            # Add data summary if available
-            if report_data.get('data'):
-                self._add_data_summary(story, report_data['data'])
+            content_text = report_data.get('content', 'No content available')
+            content_para = Paragraph(content_text, self.styles['Normal'])
+            story.append(content_para)
             
             # Build PDF
             doc.build(story)
@@ -101,7 +122,51 @@ class PDFReportGenerator(LoggerMixin):
             return output_path
             
         except Exception as e:
-            self.log_error(f"Failed to generate PDF report: {str(e)}")
+            self.log_error(f"Error generating PDF report: {str(e)}")
+            raise
+    
+    def generate_text_report(
+        self,
+        report_data: Dict[str, Any],
+        output_path: Optional[str] = None
+    ) -> str:
+        """Generate text report as fallback when PDF is not available"""
+        try:
+            # Create temporary file if no output path provided
+            if not output_path:
+                temp_file = tempfile.NamedTemporaryFile(
+                    delete=False, 
+                    suffix='.txt',
+                    prefix='agworld_report_'
+                )
+                output_path = temp_file.name
+                temp_file.close()
+            
+            self.log_info(f"Generating text report: {output_path}")
+            
+            with open(output_path, 'w') as f:
+                f.write("=" * 50 + "\n")
+                f.write(f"{report_data.get('title', 'Agworld Report')}\n")
+                f.write("=" * 50 + "\n\n")
+                
+                f.write(f"Generated: {report_data.get('created_at', 'Unknown')}\n")
+                f.write(f"Status: {report_data.get('status', 'Unknown')}\n")
+                f.write(f"Type: {report_data.get('report_type', 'Custom')}\n\n")
+                
+                f.write("CONTENT:\n")
+                f.write("-" * 20 + "\n")
+                f.write(f"{report_data.get('content', 'No content available')}\n\n")
+                
+                if 'data' in report_data:
+                    f.write("DATA:\n")
+                    f.write("-" * 20 + "\n")
+                    f.write(str(report_data['data']))
+            
+            self.log_info(f"Text report generated successfully: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            self.log_error(f"Error generating text report: {str(e)}")
             raise
     
     def _add_data_summary(self, story: List, data: Dict[str, Any]):
@@ -172,12 +237,15 @@ class ReportManager(LoggerMixin):
             # Send email if requested and recipients provided
             if format_type in ["email", "both"] and recipients:
                 try:
-                    email_sent = notifier.send_notification("email", recipients, report_data)
-                    result["email_sent"] = email_sent
-                    if email_sent:
-                        self.log_info("Report email sent successfully")
+                    if notifier:
+                        email_sent = notifier.send_notification("email", recipients, report_data)
+                        result["email_sent"] = email_sent
+                        if email_sent:
+                            self.log_info("Report email sent successfully")
+                        else:
+                            result["errors"].append("Email sending failed")
                     else:
-                        result["errors"].append("Email sending failed")
+                        result["errors"].append("Email notifier not available")
                 except Exception as e:
                     result["errors"].append(f"Email sending failed: {str(e)}")
             
