@@ -31,6 +31,12 @@ class DataProcessor(LoggerMixin):
                 processed_data["processed_data"] = self._process_crop_data(raw_data)
             elif data_type == "activity":
                 processed_data["processed_data"] = self._process_activity_data(raw_data)
+            elif data_type == "company":
+                processed_data["processed_data"] = self._process_company_data(raw_data)
+            elif data_type == "farm":
+                processed_data["processed_data"] = self._process_farm_data(raw_data)
+            elif data_type == "season":
+                processed_data["processed_data"] = self._process_season_data(raw_data)
             else:
                 processed_data["processed_data"] = self._process_generic_data(raw_data)
             
@@ -51,8 +57,14 @@ class DataProcessor(LoggerMixin):
             "field_id": raw_data.get("id"),
             "field_name": raw_data.get("name"),
             "area": raw_data.get("area"),
-            "location": raw_data.get("location"),
-            "summary": f"Field: {raw_data.get('name', 'Unknown')} - Area: {raw_data.get('area', 'N/A')}"
+            "farm_id": raw_data.get("farm_id"),
+            "description": raw_data.get("description"),
+            "cropping_method": raw_data.get("cropping_method"),
+            "crops": raw_data.get("crops", []),
+            "chemical_cost": raw_data.get("chemical_cost"),
+            "fertilizer_cost": raw_data.get("fertilizer_cost"),
+            "seed_cost": raw_data.get("seed_cost"),
+            "summary": f"Field: {raw_data.get('name', 'Unknown')} - Area: {raw_data.get('area', 'N/A')} - Farm: {raw_data.get('farm_id', 'N/A')}"
         }
     
     def _process_crop_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -61,18 +73,36 @@ class DataProcessor(LoggerMixin):
             "crop_id": raw_data.get("id"),
             "crop_type": raw_data.get("type"),
             "variety": raw_data.get("variety"),
+            "field_id": raw_data.get("field_id"),
+            "crop_grade": raw_data.get("crop_grade"),
+            "crop_use": raw_data.get("crop_use"),
+            "crop_blend": raw_data.get("crop_blend"),
             "planting_date": raw_data.get("planting_date"),
-            "summary": f"Crop: {raw_data.get('type', 'Unknown')} - Variety: {raw_data.get('variety', 'N/A')}"
+            "harvest_date": raw_data.get("harvest_date"),
+            "summary": f"Crop: {raw_data.get('type', 'Unknown')} - Variety: {raw_data.get('variety', 'N/A')} - Field: {raw_data.get('field_id', 'N/A')}"
         }
     
     def _process_activity_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """Process activity-specific data"""
         return {
             "activity_id": raw_data.get("id"),
-            "activity_type": raw_data.get("type"),
-            "date": raw_data.get("date"),
-            "description": raw_data.get("description"),
-            "summary": f"Activity: {raw_data.get('type', 'Unknown')} on {raw_data.get('date', 'Unknown date')}"
+            "title": raw_data.get("title"),
+            "activity_type": raw_data.get("activity_type"),
+            "activity_category": raw_data.get("activity_category"),
+            "approved": raw_data.get("approved"),
+            "completed": raw_data.get("completed"),
+            "area": raw_data.get("area"),
+            "total_cost": raw_data.get("total_cost"),
+            "chemical_cost": raw_data.get("chemical_cost"),
+            "fertilizer_cost": raw_data.get("fertilizer_cost"),
+            "seed_cost": raw_data.get("seed_cost"),
+            "due_at": raw_data.get("due_at"),
+            "completed_at": raw_data.get("completed_at"),
+            "company_name": raw_data.get("company_name"),
+            "author_user_name": raw_data.get("author_user_name"),
+            "activity_fields": raw_data.get("activity_fields", []),
+            "activity_inputs": raw_data.get("activity_inputs", []),
+            "summary": f"Activity: {raw_data.get('title', 'Unknown')} - Type: {raw_data.get('activity_type', 'N/A')} - Status: {'Completed' if raw_data.get('completed') else 'Pending'}"
         }
     
     def _process_generic_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -81,6 +111,44 @@ class DataProcessor(LoggerMixin):
             "id": raw_data.get("id"),
             "data": raw_data,
             "summary": f"Generic data with {len(raw_data)} fields"
+        }
+    
+    def _process_company_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process company-specific data"""
+        return {
+            "company_id": raw_data.get("id"),
+            "company_name": raw_data.get("name"),
+            "company_type": raw_data.get("company_type"),
+            "business_identifier": raw_data.get("business_identifier"),
+            "contact_email": raw_data.get("contact_email"),
+            "contact_name": raw_data.get("contact_name"),
+            "description": raw_data.get("description"),
+            "physical_location": raw_data.get("physical_location"),
+            "summary": f"Company: {raw_data.get('name', 'Unknown')} - Type: {raw_data.get('company_type', 'N/A')}"
+        }
+    
+    def _process_farm_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process farm-specific data"""
+        return {
+            "farm_id": raw_data.get("id"),
+            "farm_name": raw_data.get("name"),
+            "company_id": raw_data.get("company_id"),
+            "description": raw_data.get("description"),
+            "location": raw_data.get("location"),
+            "reporting_region": raw_data.get("reporting_region"),
+            "summary": f"Farm: {raw_data.get('name', 'Unknown')} - Region: {raw_data.get('reporting_region', 'N/A')}"
+        }
+    
+    def _process_season_data(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process season-specific data"""
+        return {
+            "season_id": raw_data.get("id"),
+            "season_name": raw_data.get("name"),
+            "company_id": raw_data.get("company_id"),
+            "approved": raw_data.get("approved"),
+            "season_start_date": raw_data.get("season_start_date"),
+            "season_end_date": raw_data.get("season_end_date"),
+            "summary": f"Season: {raw_data.get('name', 'Unknown')} - Status: {'Approved' if raw_data.get('approved') else 'Draft'}"
         }
     
     def aggregate_data(self, data_list: List[Dict[str, Any]]) -> Dict[str, Any]:
