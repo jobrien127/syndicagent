@@ -1,10 +1,19 @@
+# Core SyndicAgent dependencies
+requests>=2.31.0
+redis>=5.0.0
+reportlab>=4.0.0
+python-dotenv>=1.0.0
+
+# Testing dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Original dependencies (if needed for full stack)
 fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
-python-dotenv
 celery
-redis
 APScheduler
 jinja2
 plotly
