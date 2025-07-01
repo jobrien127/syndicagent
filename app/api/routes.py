@@ -24,8 +24,9 @@ async def health_check():
         # Check database connection
         db_status = "ok"
         try:
-            # This will be implemented when you set up the database
-            pass
+            db = next(get_db())
+            db.execute("SELECT 1")
+            db.close()
         except Exception:
             db_status = "error"
         
@@ -57,12 +58,8 @@ async def get_reports(
 ):
     """Get list of reports"""
     try:
-        # TODO: Implement database query when you set up the models
-        # reports = db.query(Report).offset(skip).limit(limit).all()
-        # return reports
-        
-        # Placeholder response
-        return []
+        reports = db.query(Report).offset(skip).limit(limit).all()
+        return reports
     except Exception as e:
         logger.error(f"Failed to get reports: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve reports")
@@ -75,27 +72,25 @@ async def create_report(
 ):
     """Create a new report"""
     try:
-        # TODO: Implement database creation when you set up the models
-        # db_report = Report(**report.dict())
-        # db.add(db_report)
-        # db.commit()
-        # db.refresh(db_report)
+        db_report = Report(
+            title=report.title,
+            content=report.content,
+            report_type=report.report_type,
+            recipients=report.recipients
+        )
+        db.add(db_report)
+        db.commit()
+        db.refresh(db_report)
         
         # Schedule report generation in background
-        background_tasks.add_task(generate_report_background, report.dict())
+        background_tasks.add_task(
+            generate_report_background, 
+            report.model_dump(), 
+            "both", 
+            report.recipients
+        )
         
-        # Placeholder response
-        return {
-            "id": 1,
-            "title": report.title,
-            "content": report.content,
-            "status": "pending",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-            "report_type": report.report_type,
-            "recipients": report.recipients,
-            "is_active": True
-        }
+        return db_report
     except Exception as e:
         logger.error(f"Failed to create report: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create report")
@@ -104,24 +99,10 @@ async def create_report(
 async def get_report(report_id: int, db: Session = Depends(get_db)):
     """Get a specific report"""
     try:
-        # TODO: Implement database query when you set up the models
-        # report = db.query(Report).filter(Report.id == report_id).first()
-        # if not report:
-        #     raise HTTPException(status_code=404, detail="Report not found")
-        # return report
-        
-        # Placeholder response
-        return {
-            "id": report_id,
-            "title": "Sample Report",
-            "content": "Sample content",
-            "status": "completed",
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-            "report_type": "daily",
-            "recipients": None,
-            "is_active": True
-        }
+        report = db.query(Report).filter(Report.id == report_id).first()
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return report
     except HTTPException:
         raise
     except Exception as e:
