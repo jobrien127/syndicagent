@@ -1,9 +1,3 @@
----
-name: Pull Request
-about: Template for pull requests in the Recess Gaming project.
-title: "[Type] <Short summary of the changes>"
----
-
 ## Summary
 <!-- Provide a concise description of what this PR accomplishes. -->
 
