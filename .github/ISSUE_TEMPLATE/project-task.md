@@ -1,13 +1,10 @@
 ---
 name: Project Task
-about: Template for a standard task or feature for the Recess Gaming project board.
-title: ""
-labels: ["task"]
-assignees: []
+about: Template for a standard task for the Recess Gaming project board.
 ---
 
 ## Summary
-<!-- Provide a concise description of the task, bug, or feature. -->
+<!-- Provide a concise description of the task -->
 
 ## Context
 <!-- Add any relevant context, background, or links to related issues, PRs, or documentation. -->
