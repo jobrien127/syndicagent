@@ -1,10 +1,10 @@
-<!-- ---
+---
 name: Project Task
 about: Template for a standard task or feature for the Recess Gaming project board.
 title: "[Task] <Short summary of the task>"
 labels: ["task"]
 assignees: []
---- -->
+---
 
 ## Summary
 <!-- Provide a concise description of the task, bug, or feature. -->
